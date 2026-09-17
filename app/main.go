@@ -23,6 +23,7 @@
 //	POST   /api/notes        {"text"} -> 201 with the created note
 //	DELETE /api/notes/{id}   204, or 404
 //	GET    /api/version      same as /version (so the page can show it)
+//	GET    /api/report       same as /report (so the validator can read the backend through the frontend)
 //
 // Probes (both modes, every 30 s, reported in /report):
 //
@@ -713,6 +714,7 @@ func main() {
 		mux.HandleFunc("/api/notes/", handleNotes)
 		mux.HandleFunc("/api/version", handleVersion)
 		mux.HandleFunc("/api/health", handleHealth)
+		mux.HandleFunc("/api/report", handleReport) // reachable through the frontend's /api proxy: the validator reads the backend tier's report this way
 		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/" {
 				jsonOut(w, 200, map[string]string{"app": "iti8801-notes", "mode": "api", "see": "/api/notes, /health, /version, /metrics, /report"})

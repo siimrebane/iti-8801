@@ -175,7 +175,6 @@ var (
 	lastOut    []probeResult
 	lastDB     *probeResult
 	lastProbes []probeResult
-	lastQuery  *bool
 	cloudMu    sync.RWMutex
 	cloud      *cloudIdentity
 )
@@ -256,13 +255,8 @@ func runProbes() {
 			probes = append(probes, dialResolved(t))
 		}
 	}
-	var q *bool
-	if mode == "api" {
-		ok := dbPing()
-		q = &ok
-	}
 	probeMu.Lock()
-	lastOut, lastDB, lastProbes, lastQuery = out, db, probes, q
+	lastOut, lastDB, lastProbes = out, db, probes
 	probeMu.Unlock()
 }
 
@@ -363,8 +357,13 @@ func handleReport(w http.ResponseWriter, r *http.Request) {
 	probeMu.RLock()
 	rep := report{App: "iti8801-notes", Mode: mode, Version: version, Commit: commit, BeaconID: instID,
 		BootedAt: bootedAt.Format(time.RFC3339), UptimeSec: int64(time.Since(bootedAt).Seconds()), Hostname: hostname,
-		Interfaces: interfaces(), Outbound: lastOut, DBCheck: lastDB, Probes: lastProbes, DBQuery: lastQuery}
+		Interfaces: interfaces(), Outbound: lastOut, DBCheck: lastDB, Probes: lastProbes}
 	probeMu.RUnlock()
+	if mode == "api" {
+		// Live, not cached: the database may have come up since the last probe run.
+		ok := dbPing()
+		rep.DBQuery = &ok
+	}
 	cloudMu.RLock()
 	rep.Cloud = cloud
 	cloudMu.RUnlock()
